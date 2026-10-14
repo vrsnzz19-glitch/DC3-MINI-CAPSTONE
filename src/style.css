@@ -9,8 +9,8 @@
     -moz-osx-font-smoothing: grayscale;
     font-optical-sizing: auto;
     font-weight: 400;
-    --green: #1ed760;
-    --green-light: #75f29a;
+    --green: #3b82f6;
+    --green-light: #93c5fd;
     --muted: #8c988e;
     --panel: #141a15;
     --border: #273129;
@@ -157,7 +157,7 @@ button:disabled {
 
 .genre-nav.active .genre-dot {
     background: var(--green);
-    box-shadow: 0 0 10px #1ed76066;
+    box-shadow: 0 0 10px #3b82f666;
 }
 
 .sidebar-bottom {
@@ -302,7 +302,7 @@ button:disabled {
     width: 450px;
     height: 350px;
     content: '';
-    background: #1ed76008;
+    background: #3b82f608;
     border-radius: 50%;
     filter: blur(25px);
 }
@@ -333,7 +333,7 @@ button:disabled {
     height: 7px;
     background: var(--green);
     border-radius: 50%;
-    box-shadow: 0 0 12px #1ed76077;
+    box-shadow: 0 0 12px #3b82f677;
 }
 
 .hero h1 {
@@ -488,7 +488,7 @@ button:disabled {
     bottom: 12%;
     left: 2%;
     color: white;
-    background: #6d4bb4;
+    background: #3b82f6;
     transform: rotate(-12deg);
 }
 
@@ -922,7 +922,7 @@ button:disabled {
     background: var(--green);
     border-radius: 50%;
     font-size: 23px;
-    box-shadow: 0 8px 30px #1ed76030;
+    box-shadow: 0 8px 30px #3b82f630;
 }
 
 .big-player-controls .big-play-button:hover {
@@ -1284,7 +1284,7 @@ button:disabled {
 
 .cover-picker button.chosen {
     border-color: var(--green);
-    box-shadow: 0 0 0 2px #1ed76035;
+    box-shadow: 0 0 0 2px #3b82f635;
 }
 
 .cover-picker img {

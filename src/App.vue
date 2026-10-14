@@ -31,18 +31,6 @@ function findAudio(title) {
 
 const songs = ref([
   {
-    id: 1,
-    title: 'Mahal Magmahal',
-    artist: 'Unknown Artist',
-    album: 'Unknown Album',
-    genre: 'BisRock',
-    year: '',
-    cover: '',
-    favorite: false,
-    protected: true,
-    audio: findAudio('Mahal magmahal')
-  },
-  {
     id: 2,
     title: 'Utang Pa More',
     artist: 'Unknown Artist',
@@ -51,7 +39,6 @@ const songs = ref([
     year: '',
     cover: '',
     favorite: false,
-    protected: true,
     audio: findAudio('Utang Pa More')
   },
   {
@@ -63,7 +50,6 @@ const songs = ref([
     year: '',
     cover: '',
     favorite: false,
-    protected: false,
     audio: findAudio('Englisera')
   },
   {
@@ -75,7 +61,6 @@ const songs = ref([
     year: '',
     cover: '',
     favorite: false,
-    protected: false,
     audio: findAudio('Inday')
   },
   {
@@ -87,7 +72,6 @@ const songs = ref([
     year: '',
     cover: '',
     favorite: false,
-    protected: false,
     audio: findAudio('Sine-Sine')
   },
   {
@@ -99,7 +83,6 @@ const songs = ref([
     year: '',
     cover: '',
     favorite: false,
-    protected: false,
     audio: findAudio('Balay ni Mayang')
   },
   {
@@ -111,7 +94,6 @@ const songs = ref([
     year: '',
     cover: '',
     favorite: false,
-    protected: false,
     audio: findAudio('Miss Tapia')
   },
   {
@@ -123,7 +105,6 @@ const songs = ref([
     year: '',
     cover: '',
     favorite: false,
-    protected: false,
     audio: findAudio('Usahay')
   },
   {
@@ -135,7 +116,6 @@ const songs = ref([
     year: '',
     cover: '',
     favorite: false,
-    protected: false,
     audio: findAudio('Puhon')
   },
   {
@@ -147,7 +127,6 @@ const songs = ref([
     year: '',
     cover: '',
     favorite: false,
-    protected: false,
     audio: findAudio('Duyog')
   },
   {
@@ -159,7 +138,6 @@ const songs = ref([
     year: '',
     cover: '',
     favorite: false,
-    protected: false,
     audio: findAudio('Bisan Pa')
   },
   {
@@ -171,14 +149,68 @@ const songs = ref([
     year: '',
     cover: '',
     favorite: false,
-    protected: false,
     audio: findAudio('Gimingaw Ko Nimo')
+  },
+  {
+    id: 13,
+    title: 'Kape sa Ulan',
+    artist: 'Spotibai Demo',
+    album: 'Mga Sugboanon nga Demo',
+    genre: 'Reggae',
+    year: '2025',
+    cover: '',
+    favorite: false,
+    displayOnly: true,
+    audio: ''
+  },
+  {
+    id: 14,
+    title: 'Kusog sa Kasingkasing',
+    artist: 'Spotibai Demo',
+    album: 'Mga Sugboanon nga Demo',
+    genre: 'Rock',
+    year: '2025',
+    cover: '',
+    favorite: false,
+    displayOnly: true,
+    audio: ''
+  },
+  {
+    id: 15,
+    title: 'Si Inday ug si Dodong',
+    artist: 'Spotibai Demo',
+    album: 'Mga Kataw-anan nga Demo',
+    genre: 'Parody',
+    year: '2025',
+    cover: '',
+    favorite: false,
+    displayOnly: true,
+    audio: ''
+  },
+  {
+    id: 16,
+    title: 'Damgo sa Sugbo',
+    artist: 'Spotibai Demo',
+    album: 'Mga Sugboanon nga Demo',
+    genre: 'Acoustic',
+    year: '2025',
+    cover: '',
+    favorite: false,
+    displayOnly: true,
+    audio: ''
   }
 ])
 
 const searchQuery = ref('')
 const selectedGenre = ref('All')
-const activeTab = ref('All Songs')
+const pageNames = ['Home', 'Library', 'Genres', 'Favorites']
+
+function pageFromHash() {
+  const page = window.location.hash.slice(1)
+  return pageNames.includes(page) ? page : 'Home'
+}
+
+const currentPage = ref(pageFromHash())
 const currentSong = ref(null)
 const isPlaying = ref(false)
 const showFullPlayer = ref(false)
@@ -188,6 +220,7 @@ const duration = ref(0)
 const showForm = ref(false)
 const editingSong = ref(null)
 const formError = ref('')
+const featuredGenres = ['Acoustic', 'BisRock', 'Parody', 'Reggae', 'Rock']
 
 const form = ref({
   title: '',
@@ -197,10 +230,30 @@ const form = ref({
   year: ''
 })
 
-const genres = computed(() => [
-  'All',
-  ...new Set(songs.value.map(song => song.genre))
+const genreOptions = computed(() =>
+  [...new Set([...featuredGenres, ...songs.value.map(song => song.genre)])].sort()
+)
+
+const genres = computed(() => ['All', ...genreOptions.value])
+
+const genreCounts = computed(() =>
+  genreOptions.value.map(genre => ({
+    name: genre,
+    count: songs.value.filter(song => song.genre === genre).length
+  }))
+)
+
+const genreDirectory = computed(() => [
+  { name: 'All', count: songs.value.length },
+  ...genreCounts.value
 ])
+
+const pageTitle = computed(() => ({
+  Home: 'Discover Bisaya Music',
+  Library: 'Your Music Library',
+  Genres: 'Browse by Genre',
+  Favorites: 'Your Favorites'
+}[currentPage.value]))
 
 const favoriteCount = computed(() =>
   songs.value.filter(song => song.favorite).length
@@ -209,7 +262,7 @@ const favoriteCount = computed(() =>
 const filteredSongs = computed(() => {
   let result = songs.value
 
-  if (activeTab.value === 'Favorites') {
+  if (currentPage.value === 'Favorites') {
     result = result.filter(song => song.favorite)
   }
 
@@ -253,7 +306,7 @@ function openAddForm() {
     title: '',
     artist: '',
     album: '',
-    genre: 'BisRock',
+    genre: selectedGenre.value === 'All' ? 'BisRock' : selectedGenre.value,
     year: ''
   }
 
@@ -261,11 +314,6 @@ function openAddForm() {
 }
 
 function openEditForm(song) {
-  if (song.protected) {
-    alert('This song is protected and cannot be edited.')
-    return
-  }
-
   editingSong.value = song
 
   form.value = {
@@ -293,7 +341,7 @@ function saveSong() {
       item => item.id === editingSong.value.id
     )
 
-    if (song && !song.protected) {
+    if (song) {
       song.title = form.value.title.trim()
       song.artist = form.value.artist.trim()
       song.album = form.value.album.trim() || 'Unknown Album'
@@ -311,7 +359,7 @@ function saveSong() {
       year: form.value.year || '',
       cover: '',
       favorite: false,
-      protected: false,
+      displayOnly: false,
       audio: findAudio(form.value.title.trim())
     })
   }
@@ -320,11 +368,6 @@ function saveSong() {
 }
 
 function deleteSong(song) {
-  if (song.protected) {
-    alert(`"${song.title}" is protected and cannot be deleted.`)
-    return
-  }
-
   if (confirm(`Delete "${song.title}" from your library?`)) {
     if (currentSong.value?.id === song.id) {
       stopSong()
@@ -339,11 +382,15 @@ function toggleFavorite(song) {
 }
 
 function openFullPlayer(song) {
+  if (song.displayOnly) return
+
   currentSong.value = song
   showFullPlayer.value = true
 }
 
 function playSong(song) {
+  if (song.displayOnly) return
+
   if (currentSong.value?.id === song.id && audioElement.value) {
     if (isPlaying.value) {
       audioElement.value.pause()
@@ -364,6 +411,46 @@ function playSong(song) {
   isPlaying.value = false
   currentTime.value = 0
   duration.value = 0
+}
+
+function selectGenre(genre) {
+  selectedGenre.value = genre
+  navigateTo('Genres')
+  searchQuery.value = ''
+}
+
+function showAllSongs() {
+  selectedGenre.value = 'All'
+  navigateTo('Library')
+}
+
+function showFavorites() {
+  selectedGenre.value = 'All'
+  navigateTo('Favorites')
+}
+
+function showGenres() {
+  selectedGenre.value = 'All'
+  navigateTo('Genres')
+}
+
+function updateGenreFilter() {
+  if (currentPage.value !== 'Genres') {
+    navigateTo('Library')
+  }
+}
+
+function navigateTo(page) {
+  if (!pageNames.includes(page)) return
+  currentPage.value = page
+  window.history.pushState(null, '', `#${page}`)
+}
+
+function handlePageHistory() {
+  currentPage.value = pageFromHash()
+  if (currentPage.value !== 'Genres' && currentPage.value !== 'Library') {
+    selectedGenre.value = 'All'
+  }
 }
 
 function togglePlayback() {
@@ -437,7 +524,10 @@ watch(currentSong, () => {
   duration.value = 0
 })
 
+window.addEventListener('popstate', handlePageHistory)
+
 onBeforeUnmount(() => {
+  window.removeEventListener('popstate', handlePageHistory)
   if (audioElement.value) {
     audioElement.value.pause()
   }
@@ -451,7 +541,7 @@ onBeforeUnmount(() => {
         <div class="brand-icon">♫</div>
         <div>
           <h1>Spotibai</h1>
-          <p>BisRock Music Library</p>
+          <p>Bisaya Music Library</p>
         </div>
       </div>
 
@@ -459,28 +549,62 @@ onBeforeUnmount(() => {
 
       <button
         class="nav-item"
-        :class="{ active: activeTab === 'All Songs' }"
-        @click="activeTab = 'All Songs'"
+        :class="{ active: currentPage === 'Home' }"
+        @click="navigateTo('Home')"
+      >
+        <span>⌂</span>
+        <span>Home</span>
+      </button>
+
+      <button
+        class="nav-item"
+        :class="{ active: currentPage === 'Library' }"
+        @click="showAllSongs"
       >
         <span>♫</span>
-        <span>All Songs</span>
+        <span>Library</span>
         <span class="nav-count">{{ songs.length }}</span>
       </button>
 
       <button
         class="nav-item"
-        :class="{ active: activeTab === 'Favorites' }"
-        @click="activeTab = 'Favorites'"
+        :class="{ active: currentPage === 'Genres' }"
+        @click="showGenres"
+      >
+        <span>♪</span>
+        <span>Genres</span>
+        <span class="nav-count">{{ genreOptions.length }}</span>
+      </button>
+
+      <button
+        class="nav-item"
+        :class="{ active: currentPage === 'Favorites' }"
+        @click="showFavorites"
       >
         <span>♥</span>
         <span>Favorites</span>
         <span class="nav-count">{{ favoriteCount }}</span>
       </button>
 
+      <div class="genre-nav">
+        <div class="sidebar-label genre-nav-label">GENRES</div>
+        <button
+          v-for="genre in genreCounts"
+          :key="genre.name"
+          class="nav-item genre-nav-item"
+          :class="{ active: currentPage === 'Genres' && selectedGenre === genre.name }"
+          @click="selectGenre(genre.name)"
+        >
+          <span>♪</span>
+          <span>{{ genre.name }}</span>
+          <span class="nav-count">{{ genre.count }}</span>
+        </button>
+      </div>
+
       <div class="sidebar-bottom">
         <div class="sidebar-note">
           <span class="note-icon">♪</span>
-          <p>Your home for BisRock music.</p>
+          <p>Your home for Bisaya music, parody, and more.</p>
         </div>
         <p class="copyright">Spotibai · Music Library</p>
       </div>
@@ -489,36 +613,42 @@ onBeforeUnmount(() => {
     <main class="main-content">
       <header class="topbar">
         <div>
-          <p class="eyebrow">YOUR PERSONAL COLLECTION</p>
-          <h2>Music Library</h2>
+          <p class="eyebrow">SPOTIBAI · BISAYA MUSIC HUB</p>
+          <h2>{{ pageTitle }}</h2>
         </div>
 
-        <button class="add-button" @click="openAddForm">
+        <button
+          v-if="currentPage !== 'Home'"
+          class="add-button"
+          @click="openAddForm"
+        >
           <span>＋</span> Add Song
         </button>
       </header>
 
-      <section class="hero">
+      <section v-if="currentPage === 'Home'" class="hero landing-hero">
         <div class="hero-content">
-          <span class="hero-tag">BISROCK COLLECTION</span>
-          <h2>Feel the music.<br /><span>Feel the BisRock.</span></h2>
+          <span class="hero-tag">WELCOME TO SPOTIBAI</span>
+          <h2>One home for<br /><span>Bisaya music.</span></h2>
           <p>
-            Your favorite Cebuano sounds, all in one place.
-            Keep your songs organized and enjoy the music.
+            Explore BisRock, reggae, rock, acoustic, and parody songs.
+            Build your own collection and celebrate Bisaya sounds.
           </p>
-          <button
-            class="hero-button"
-            @click="activeTab = 'All Songs'"
-          >
-            Explore Library <span>→</span>
-          </button>
+          <div class="landing-actions">
+            <button class="hero-button" @click="showAllSongs">
+              Explore Library <span>→</span>
+            </button>
+            <button class="outline-button" @click="showGenres">
+              Browse Genres
+            </button>
+          </div>
         </div>
         <div class="hero-decoration">♫</div>
       </section>
 
-      <section class="stats-grid">
+      <section v-if="currentPage === 'Home'" class="stats-grid">
         <div class="stat-card">
-          <div class="stat-icon purple">♫</div>
+          <div class="stat-icon blue">♫</div>
           <div>
             <p>Total Songs</p>
             <h3>{{ songs.length }}</h3>
@@ -542,13 +672,55 @@ onBeforeUnmount(() => {
         </div>
       </section>
 
-      <section class="library-section">
+      <section v-if="currentPage === 'Genres'" class="genre-page">
+        <div class="section-heading">
+          <div>
+            <h2>Find your sound</h2>
+            <p>Choose a genre to see its Bisaya song collection.</p>
+          </div>
+        </div>
+
+        <div class="genre-grid">
+          <button
+            v-for="genre in genreDirectory"
+            :key="genre.name"
+            class="genre-card"
+            :class="{ selected: selectedGenre === genre.name }"
+            @click="selectGenre(genre.name)"
+          >
+            <span class="genre-card-icon">♫</span>
+            <span class="genre-card-name">
+              {{ genre.name === 'All' ? 'All Genres' : genre.name }}
+            </span>
+            <span class="genre-card-count">{{ genre.count }} songs</span>
+            <span class="genre-card-arrow">→</span>
+          </button>
+        </div>
+      </section>
+
+      <section v-if="currentPage !== 'Home'" class="library-section">
         <div class="section-heading">
           <div>
             <h2>
-              {{ activeTab === 'Favorites' ? 'Favorite Songs' : 'Your Songs' }}
+              {{
+                currentPage === 'Favorites'
+                  ? 'Favorite Songs'
+                  : currentPage === 'Genres'
+                    ? selectedGenre === 'All'
+                      ? 'All Bisaya Songs'
+                      : `${selectedGenre} Songs`
+                    : 'All Bisaya Songs'
+              }}
             </h2>
-            <p>Manage and discover your music collection.</p>
+            <p>
+              {{
+                currentPage === 'Favorites'
+                  ? 'The songs you have saved as favorites.'
+                  : currentPage === 'Genres' && selectedGenre !== 'All'
+                    ? `Browse Bisaya ${selectedGenre.toLowerCase()} songs.`
+                    : 'Add, edit, delete, and discover songs across your collection.'
+              }}
+            </p>
           </div>
           <span class="result-count">{{ filteredSongs.length }} songs</span>
         </div>
@@ -569,7 +741,12 @@ onBeforeUnmount(() => {
             >×</button>
           </div>
 
-          <select v-model="selectedGenre" class="genre-select">
+          <select
+            v-if="currentPage !== 'Favorites'"
+            v-model="selectedGenre"
+            class="genre-select"
+            @change="updateGenreFilter"
+          >
             <option
               v-for="genre in genres"
               :key="genre"
@@ -585,6 +762,7 @@ onBeforeUnmount(() => {
             v-for="song in filteredSongs"
             :key="song.id"
             class="song-card"
+            :class="{ 'display-only': song.displayOnly }"
             @click="openFullPlayer(song)"
           >
             <div class="cover-wrap">
@@ -611,6 +789,7 @@ onBeforeUnmount(() => {
               </button>
 
               <button
+                v-if="!song.displayOnly"
                 class="cover-play"
                 @click.stop="playSong(song)"
                 :aria-label="'Play ' + song.title"
@@ -621,11 +800,6 @@ onBeforeUnmount(() => {
             <div class="song-info">
               <div class="song-title-row">
                 <h3 :title="song.title">{{ song.title }}</h3>
-                <span
-                  v-if="song.protected"
-                  class="protected-mark"
-                  title="Protected song"
-                >🔒</span>
               </div>
 
               <p class="song-artist">{{ song.artist }}</p>
@@ -633,6 +807,7 @@ onBeforeUnmount(() => {
               <div class="song-meta">
                 <span>{{ song.genre }}</span>
                 <span>{{ song.year || 'Year unknown' }}</span>
+                <span v-if="song.displayOnly" class="display-badge">Display only</span>
               </div>
 
               <p class="song-album">{{ song.album || 'Unknown Album' }}</p>
@@ -641,22 +816,27 @@ onBeforeUnmount(() => {
                 <button
                   class="play-button"
                   @click.stop="playSong(song)"
+                  :disabled="song.displayOnly"
+                  :title="song.displayOnly ? 'Display-only sample; no audio available' : 'Play song'"
                 >
-                  <span>▶</span> Play
+                  <template v-if="song.displayOnly">
+                    <span>◉</span> Display only
+                  </template>
+                  <template v-else>
+                    <span>▶</span> Play
+                  </template>
                 </button>
 
                 <button
                   class="icon-action"
                   @click.stop="openEditForm(song)"
-                  :disabled="song.protected"
-                  :title="song.protected ? 'This song cannot be edited' : 'Edit song'"
+                  title="Edit song"
                 >✎</button>
 
                 <button
                   class="icon-action delete-action"
                   @click.stop="deleteSong(song)"
-                  :disabled="song.protected"
-                  :title="song.protected ? 'This song cannot be deleted' : 'Delete song'"
+                  title="Delete song"
                 >⌫</button>
               </div>
             </div>
@@ -737,12 +917,16 @@ onBeforeUnmount(() => {
             <label>
               Genre
               <select v-model="form.genre">
-                <option>BisRock</option>
-                <option>OPM</option>
-                <option>Rock</option>
-                <option>Alternative</option>
-                <option>Pop</option>
-                <option>Other</option>
+                <option
+                  v-for="genre in genreOptions"
+                  :key="genre"
+                  :value="genre"
+                >
+                  {{ genre }}
+                </option>
+                <option v-if="form.genre && !genreOptions.includes(form.genre)" :value="form.genre">
+                  {{ form.genre }}
+                </option>
               </select>
             </label>
 
@@ -787,7 +971,7 @@ onBeforeUnmount(() => {
             class="back-button"
             @click="closeFullPlayer"
             aria-label="Back to library"
-          >⌄</button>
+          >←</button>
 
           <div class="full-player-heading">
             <span>NOW PLAYING</span>
@@ -872,7 +1056,7 @@ onBeforeUnmount(() => {
                 class="secondary-control"
                 @click="showFullPlayer = false"
                 title="Back to library"
-              >⌄</button>
+              >⏭</button>
             </div>
 
             <p class="player-status">
@@ -884,7 +1068,7 @@ onBeforeUnmount(() => {
 
         <div class="full-player-footer">
           <span>♫</span>
-          <p>Enjoy your favorite BisRock music.</p>
+          <p>Enjoy Bisaya music in every style.</p>
           <span>{{ currentSong.genre }}</span>
         </div>
       </section>
@@ -909,8 +1093,8 @@ onBeforeUnmount(() => {
 
 :root {
   font-family: 'DM Sans', sans-serif;
-  color: #f5f3ff;
-  background: #100e18;
+  color: #f3f7ff;
+  background: #0b1220;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
 }
@@ -922,7 +1106,7 @@ onBeforeUnmount(() => {
 body {
   margin: 0;
   min-width: 320px;
-  background: #100e18;
+  background: #0b1220;
 }
 
 button,
@@ -942,7 +1126,7 @@ button:disabled {
 
 .app-shell {
   min-height: 100vh;
-  background: #100e18;
+  background: #0b1220;
 }
 
 .sidebar {
@@ -953,8 +1137,9 @@ button:disabled {
   flex-direction: column;
   width: 245px;
   padding: 28px 18px;
-  background: #15121f;
-  border-right: 1px solid #292337;
+  overflow-y: auto;
+  background: #101a2b;
+  border-right: 1px solid #202d42;
 }
 
 .brand {
@@ -970,7 +1155,7 @@ button:disabled {
   width: 43px;
   height: 43px;
   border-radius: 14px;
-  background: linear-gradient(135deg, #a855f7, #ec4899);
+  background: linear-gradient(135deg, #2563eb, #38bdf8);
   color: white;
   font-size: 27px;
   font-weight: bold;
@@ -984,13 +1169,13 @@ button:disabled {
 
 .brand p {
   margin: 3px 0 0;
-  color: #8e879f;
+  color: #8794a9;
   font-size: 10px;
 }
 
 .sidebar-label,
 .eyebrow {
-  color: #8e879f;
+  color: #8794a9;
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 1.8px;
@@ -998,6 +1183,14 @@ button:disabled {
 
 .sidebar-label {
   padding: 0 12px 13px;
+}
+
+.genre-nav {
+  margin-top: 24px;
+}
+
+.genre-nav-label {
+  padding-bottom: 10px;
 }
 
 .nav-item {
@@ -1010,7 +1203,7 @@ button:disabled {
   border: 1px solid transparent;
   border-radius: 10px;
   background: transparent;
-  color: #a9a2b9;
+  color: #a8b5ca;
   text-align: left;
   font-size: 13px;
   transition: 0.2s;
@@ -1023,14 +1216,14 @@ button:disabled {
 
 .nav-item.active,
 .nav-item:hover {
-  background: #282035;
-  border-color: #3a2a4e;
-  color: #e7c6ff;
+  background: #1b2b45;
+  border-color: #29466f;
+  color: #bfdbfe;
 }
 
 .nav-count {
   margin-left: auto;
-  color: #8f849e;
+  color: #8794a9;
   font-size: 11px;
 }
 
@@ -1040,26 +1233,26 @@ button:disabled {
 
 .sidebar-note {
   padding: 17px;
-  border: 1px solid #33263f;
+  border: 1px solid #263b5b;
   border-radius: 13px;
-  background: #201829;
+  background: #17243a;
 }
 
 .note-icon {
-  color: #d58bff;
+  color: #60a5fa;
   font-size: 24px;
 }
 
 .sidebar-note p {
   margin: 9px 0 0;
-  color: #b7adc7;
+  color: #b5c2d8;
   font-size: 12px;
   line-height: 1.7;
 }
 
 .copyright {
   margin: 18px 5px 0;
-  color: #655d73;
+  color: #65748c;
   font-size: 10px;
 }
 
@@ -1093,11 +1286,11 @@ button:disabled {
   padding: 11px 17px;
   border: 0;
   border-radius: 9px;
-  background: linear-gradient(110deg, #a855f7, #d946ef);
+  background: linear-gradient(110deg, #2563eb, #0ea5e9);
   color: white;
   font-size: 12px;
   font-weight: 700;
-  box-shadow: 0 5px 18px #a855f722;
+  box-shadow: 0 5px 18px #2563eb33;
   transition: transform 0.2s, opacity 0.2s;
 }
 
@@ -1118,11 +1311,11 @@ button:disabled {
   min-height: 255px;
   overflow: hidden;
   padding: 34px 37px;
-  border: 1px solid #49305d;
+  border: 1px solid #2c4b77;
   border-radius: 17px;
   background:
-    radial-gradient(ellipse at 85% 10%, #7739a74d, transparent 40%),
-    linear-gradient(115deg, #291b3d 0%, #1d1830 56%, #2b1740 100%);
+    radial-gradient(ellipse at 85% 10%, #2563eb4d, transparent 40%),
+    linear-gradient(115deg, #172d50 0%, #121d33 56%, #17365a 100%);
 }
 
 .hero-content {
@@ -1134,10 +1327,10 @@ button:disabled {
 .hero-tag {
   display: inline-block;
   padding: 6px 9px;
-  border: 1px solid #8b5dbb66;
+  border: 1px solid #60a5fa66;
   border-radius: 5px;
-  background: #8b5dbb22;
-  color: #e5baff;
+  background: #3b82f622;
+  color: #bfdbfe;
   font-size: 9px;
   font-weight: 700;
   letter-spacing: 1.5px;
@@ -1151,13 +1344,13 @@ button:disabled {
 }
 
 .hero h2 span {
-  color: #d99aff;
+  color: #60a5fa;
 }
 
 .hero p {
   max-width: 430px;
   margin: 0;
-  color: #bcb0cc;
+  color: #b4c3da;
   font-size: 12px;
   line-height: 1.8;
 }
@@ -1170,18 +1363,46 @@ button:disabled {
   padding: 10px 15px;
   border: 0;
   border-radius: 8px;
-  background: #f5eaff;
-  color: #342044;
+  background: #dbeafe;
+  color: #10213d;
   font-size: 11px;
   font-weight: 700;
   transition: 0.2s;
+}
+
+.landing-hero {
+  min-height: 330px;
+}
+
+.landing-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.outline-button {
+  margin-top: 19px;
+  padding: 10px 15px;
+  border: 1px solid #7194c4;
+  border-radius: 8px;
+  background: #14243b99;
+  color: #dbeafe;
+  font-size: 11px;
+  font-weight: 700;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.outline-button:hover {
+  transform: translateY(-2px);
+  background: #1d3454;
 }
 
 .hero-decoration {
   position: absolute;
   right: 8%;
   top: 50%;
-  color: #b86af6;
+  color: #60a5fa;
   font-size: 180px;
   line-height: 1;
   opacity: 0.14;
@@ -1201,9 +1422,9 @@ button:disabled {
   align-items: center;
   gap: 14px;
   padding: 19px;
-  border: 1px solid #2b2538;
+  border: 1px solid #26344b;
   border-radius: 13px;
-  background: #191622;
+  background: #121a29;
 }
 
 .stat-icon {
@@ -1215,9 +1436,9 @@ button:disabled {
   font-size: 22px;
 }
 
-.stat-icon.purple {
-  background: #7335a82b;
-  color: #c38bff;
+.stat-icon.blue {
+  background: #2563eb2b;
+  color: #60a5fa;
 }
 
 .stat-icon.pink {
@@ -1232,7 +1453,7 @@ button:disabled {
 
 .stat-card p {
   margin: 0 0 5px;
-  color: #92899f;
+  color: #929fb5;
   font-size: 11px;
 }
 
@@ -1249,22 +1470,80 @@ button:disabled {
   margin-bottom: 18px;
 }
 
+.genre-page {
+  margin: 30px 0 36px;
+}
+
+.genre-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+}
+
+.genre-card {
+  position: relative;
+  display: flex;
+  min-height: 145px;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 8px;
+  padding: 20px;
+  border: 1px solid #263b5b;
+  border-radius: 13px;
+  background:
+    radial-gradient(circle at 100% 0%, #2563eb30, transparent 55%),
+    #121a29;
+  color: #edf4ff;
+  text-align: left;
+  transition: transform 0.2s, border-color 0.2s, background-color 0.2s;
+}
+
+.genre-card:hover,
+.genre-card.selected {
+  transform: translateY(-2px);
+  border-color: #3b82f6;
+  background-color: #17243a;
+}
+
+.genre-card-icon {
+  color: #60a5fa;
+  font-size: 21px;
+}
+
+.genre-card-name {
+  font: 700 17px 'Space Grotesk', sans-serif;
+}
+
+.genre-card-count {
+  color: #93a2b8;
+  font-size: 11px;
+}
+
+.genre-card-arrow {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  color: #93c5fd;
+  font-size: 18px;
+}
+
 .section-heading h2 {
   font-size: 21px;
 }
 
 .section-heading p {
   margin: 6px 0 0;
-  color: #8e879f;
+  color: #8794a9;
   font-size: 11px;
 }
 
 .result-count {
   padding: 7px 10px;
-  border: 1px solid #32283f;
+  border: 1px solid #2c3d58;
   border-radius: 7px;
-  background: #1b1625;
-  color: #c4a1e6;
+  background: #18243a;
+  color: #93c5fd;
   font-size: 10px;
 }
 
@@ -1281,10 +1560,10 @@ button:disabled {
   gap: 9px;
   min-width: 0;
   padding: 0 13px;
-  border: 1px solid #302a3d;
+  border: 1px solid #2c3b54;
   border-radius: 9px;
-  background: #191622;
-  color: #a99ab9;
+  background: #121a29;
+  color: #a8b5ca;
 }
 
 .search-box > span {
@@ -1297,29 +1576,29 @@ button:disabled {
   border: 0;
   outline: none;
   background: transparent;
-  color: #f5f3ff;
+  color: #f3f7ff;
   font-size: 11px;
 }
 
 .search-box input::placeholder {
-  color: #756d84;
+  color: #71819a;
 }
 
 .clear-search {
   border: 0;
   background: transparent;
-  color: #b9afc7;
+  color: #b5c2d8;
   font-size: 20px;
 }
 
 .genre-select,
 .song-modal select {
   padding: 0 13px;
-  border: 1px solid #302a3d;
+  border: 1px solid #2c3b54;
   border-radius: 9px;
   outline: none;
-  background: #191622;
-  color: #d8cfe5;
+  background: #121a29;
+  color: #d0dced;
   font-size: 11px;
 }
 
@@ -1332,23 +1611,32 @@ button:disabled {
 .song-card {
   min-width: 0;
   overflow: hidden;
-  border: 1px solid #2c2538;
+  border: 1px solid #26344b;
   border-radius: 12px;
-  background: #191622;
+  background: #121a29;
   transition: transform 0.2s, border-color 0.2s;
   cursor: pointer;
 }
 
 .song-card:hover {
   transform: translateY(-3px);
-  border-color: #6d438a;
+  border-color: #3b82f6;
+}
+
+.song-card.display-only {
+  cursor: default;
+}
+
+.song-card.display-only:hover {
+  transform: none;
+  border-color: #26344b;
 }
 
 .cover-wrap {
   position: relative;
   aspect-ratio: 1 / 0.82;
   overflow: hidden;
-  background: #211a2c;
+  background: #17243a;
 }
 
 .song-cover {
@@ -1368,22 +1656,22 @@ button:disabled {
   height: 100%;
   overflow: hidden;
   background:
-    radial-gradient(circle at 30% 20%, #8750a8 0, transparent 42%),
-    linear-gradient(145deg, #302044, #17121f 70%);
-  color: #dfb7ff;
+    radial-gradient(circle at 30% 20%, #2563eb 0, transparent 42%),
+    linear-gradient(145deg, #1d3d69, #111a2a 70%);
+  color: #bfdbfe;
 }
 
 .cover-note {
   font-size: 68px;
   line-height: 1;
-  text-shadow: 0 0 25px #bc75ff88;
+  text-shadow: 0 0 25px #60a5fa88;
 }
 
 .music-note-cover small {
   font-size: 9px;
   font-weight: 700;
   letter-spacing: 3px;
-  color: #a89ab8;
+  color: #a8b5ca;
 }
 
 .favorite-button {
@@ -1396,8 +1684,8 @@ button:disabled {
   height: 30px;
   border: 1px solid #ffffff22;
   border-radius: 50%;
-  background: #15101dcc;
-  color: #ddd2e7;
+  background: #111a2acc;
+  color: #d4e1f5;
   font-size: 18px;
 }
 
@@ -1415,8 +1703,8 @@ button:disabled {
   height: 37px;
   border: 0;
   border-radius: 50%;
-  background: #c67bfa;
-  color: #24102f;
+  background: #60a5fa;
+  color: #10213d;
   box-shadow: 0 3px 15px #0005;
   transition: transform 0.2s;
 }
@@ -1438,22 +1726,17 @@ button:disabled {
 .song-title-row h3 {
   overflow: hidden;
   margin: 0;
-  color: #f2eafa;
+  color: #edf4ff;
   font-size: 13px;
   font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.protected-mark {
-  flex-shrink: 0;
-  font-size: 10px;
-}
-
 .song-artist {
   overflow: hidden;
   margin: 6px 0 10px;
-  color: #a399b2;
+  color: #a3b1c7;
   font-size: 10px;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1468,15 +1751,20 @@ button:disabled {
 .song-meta span {
   padding: 4px 7px;
   border-radius: 5px;
-  background: #33243f;
-  color: #d1a9f0;
+  background: #1d3454;
+  color: #bfdbfe;
   font-size: 9px;
+}
+
+.song-meta .display-badge {
+  background: #24354f;
+  color: #a8b5ca;
 }
 
 .song-album {
   overflow: hidden;
   margin: 9px 0 13px;
-  color: #80768e;
+  color: #7f8da4;
   font-size: 10px;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1497,14 +1785,14 @@ button:disabled {
   padding: 8px 9px;
   border: 0;
   border-radius: 7px;
-  background: #342342;
-  color: #e2c2ff;
+  background: #1d3454;
+  color: #bfdbfe;
   font-size: 10px;
   font-weight: 700;
 }
 
 .play-button:hover {
-  background: #4a2d60;
+  background: #294a77;
 }
 
 .icon-action {
@@ -1512,16 +1800,16 @@ button:disabled {
   place-items: center;
   width: 31px;
   height: 31px;
-  border: 1px solid #352c42;
+  border: 1px solid #2c3b54;
   border-radius: 7px;
-  background: #211b2b;
-  color: #b5a8c6;
+  background: #17243a;
+  color: #b5c2d8;
   font-size: 16px;
 }
 
 .icon-action:hover:not(:disabled) {
-  border-color: #8e55b8;
-  color: #e8c5ff;
+  border-color: #3b82f6;
+  color: #bfdbfe;
 }
 
 .delete-action:hover:not(:disabled) {
@@ -1531,13 +1819,13 @@ button:disabled {
 
 .empty-state {
   padding: 55px 20px;
-  border: 1px dashed #3a3048;
+  border: 1px dashed #334765;
   border-radius: 13px;
   text-align: center;
 }
 
 .empty-icon {
-  color: #a877d1;
+  color: #60a5fa;
   font-size: 43px;
 }
 
@@ -1548,7 +1836,7 @@ button:disabled {
 
 .empty-state p {
   margin: 0 0 18px;
-  color: #91879f;
+  color: #94a3b8;
   font-size: 12px;
 }
 
@@ -1558,8 +1846,8 @@ button:disabled {
   gap: 12px;
   margin-top: 38px;
   padding-top: 20px;
-  border-top: 1px solid #2b2538;
-  color: #70677e;
+  border-top: 1px solid #26344b;
+  color: #71819a;
   font-size: 10px;
 }
 
@@ -1578,9 +1866,9 @@ button:disabled {
 .song-modal {
   width: min(100%, 490px);
   padding: 26px;
-  border: 1px solid #453253;
+  border: 1px solid #334765;
   border-radius: 16px;
-  background: #1b1725;
+  background: #141f32;
   box-shadow: 0 20px 70px #0007;
 }
 
@@ -1599,16 +1887,16 @@ button:disabled {
 .modal-close {
   width: 32px;
   height: 32px;
-  border: 1px solid #3d324b;
+  border: 1px solid #32445e;
   border-radius: 8px;
-  background: #272031;
-  color: #d2c4df;
+  background: #1e2b40;
+  color: #d0dced;
   font-size: 22px;
 }
 
 .modal-description {
   margin: 12px 0 22px;
-  color: #9d92ad;
+  color: #93a2b8;
   font-size: 11px;
   line-height: 1.7;
 }
@@ -1623,7 +1911,7 @@ button:disabled {
   display: flex;
   flex-direction: column;
   gap: 7px;
-  color: #d8cee4;
+  color: #d0dced;
   font-size: 11px;
   font-weight: 600;
 }
@@ -1637,21 +1925,21 @@ button:disabled {
   width: 100%;
   min-height: 41px;
   padding: 10px 12px;
-  border: 1px solid #393047;
+  border: 1px solid #32445e;
   border-radius: 8px;
   outline: none;
-  background: #15121e;
-  color: #f4edfa;
+  background: #121a29;
+  color: #edf4ff;
   font-size: 12px;
 }
 
 .song-modal input:focus,
 .song-modal select:focus {
-  border-color: #a855f7;
+  border-color: #3b82f6;
 }
 
 .song-modal input::placeholder {
-  color: #71677e;
+  color: #71819a;
 }
 
 .form-row {
@@ -1675,10 +1963,10 @@ button:disabled {
 
 .cancel-button {
   padding: 10px 15px;
-  border: 1px solid #40364c;
+  border: 1px solid #3a4b64;
   border-radius: 8px;
   background: transparent;
-  color: #c7bbd5;
+  color: #c2cee0;
   font-size: 11px;
 }
 
@@ -1694,8 +1982,8 @@ button:disabled {
   padding: 25px 5vw 20px;
   overflow-y: auto;
   background:
-    radial-gradient(ellipse at 50% 0%, #66368c 0%, transparent 42%),
-    linear-gradient(145deg, #21152e 0%, #110e19 58%, #0c0a12 100%);
+    radial-gradient(ellipse at 50% 0%, #1d4ed8 0%, transparent 42%),
+    linear-gradient(145deg, #152746 0%, #0d1422 58%, #090f1a 100%);
 }
 
 .full-player-header {
@@ -1716,7 +2004,7 @@ button:disabled {
   border: 1px solid #ffffff20;
   border-radius: 50%;
   background: #ffffff0c;
-  color: #f4eaff;
+  color: #eaf2ff;
   font-size: 26px;
 }
 
@@ -1737,14 +2025,14 @@ button:disabled {
 }
 
 .full-player-heading span {
-  color: #cba6e8;
+  color: #93c5fd;
   font-size: 9px;
   font-weight: 700;
   letter-spacing: 2px;
 }
 
 .full-player-heading strong {
-  color: #f3e9ff;
+  color: #edf4ff;
   font: 700 14px 'Space Grotesk', sans-serif;
   letter-spacing: 1px;
 }
@@ -1768,8 +2056,8 @@ button:disabled {
   justify-self: center;
   border: 1px solid #ffffff16;
   border-radius: 24px;
-  background: #211a2c;
-  box-shadow: 0 25px 80px #0007, 0 0 70px #ad5fe722;
+  background: #17243a;
+  box-shadow: 0 25px 80px #0007, 0 0 70px #3b82f633;
 }
 
 .large-cover-image {
@@ -1790,9 +2078,9 @@ button:disabled {
   height: 100%;
   overflow: hidden;
   background:
-    radial-gradient(circle at 25% 20%, #8b45b8 0%, transparent 42%),
-    radial-gradient(circle at 80% 85%, #563178 0%, transparent 40%),
-    linear-gradient(145deg, #30203f, #17101f 70%);
+    radial-gradient(circle at 25% 20%, #2563eb 0%, transparent 42%),
+    radial-gradient(circle at 80% 85%, #174ea6 0%, transparent 40%),
+    linear-gradient(145deg, #1d3d69, #111a2a 70%);
 }
 
 .large-note-glow {
@@ -1800,22 +2088,22 @@ button:disabled {
   width: 65%;
   aspect-ratio: 1;
   border-radius: 50%;
-  background: #c16cff;
+  background: #60a5fa;
   filter: blur(70px);
   opacity: 0.17;
 }
 
 .large-note {
   position: relative;
-  color: #f0d9ff;
+  color: #dbeafe;
   font-size: clamp(110px, 17vw, 200px);
   line-height: 1;
-  text-shadow: 0 0 40px #c184ff88;
+  text-shadow: 0 0 40px #60a5fa88;
 }
 
 .large-cover-brand {
   position: relative;
-  color: #c8a8e3;
+  color: #93c5fd;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 6px;
@@ -1837,14 +2125,14 @@ button:disabled {
 .full-song-text h1 {
   overflow-wrap: anywhere;
   margin: 0;
-  color: #fff8ff;
+  color: #f5f9ff;
   font: 700 clamp(25px, 3.5vw, 38px) 'Space Grotesk', sans-serif;
   letter-spacing: -1px;
 }
 
 .full-song-text p {
   margin: 9px 0 0;
-  color: #b9a8c9;
+  color: #b5c2d8;
   font-size: 14px;
 }
 
@@ -1852,7 +2140,7 @@ button:disabled {
   flex-shrink: 0;
   border: 0;
   background: transparent;
-  color: #b7a6c6;
+  color: #b5c2d8;
   font-size: 31px;
 }
 
@@ -1874,10 +2162,10 @@ button:disabled {
   appearance: none;
   background: linear-gradient(
     to right,
-    #d9a0ff 0%,
-    #d9a0ff var(--progress, 0%),
-    #51445f var(--progress, 0%),
-    #51445f 100%
+    #60a5fa 0%,
+    #60a5fa var(--progress, 0%),
+    #3a4b64 var(--progress, 0%),
+    #3a4b64 100%
   );
   cursor: pointer;
 }
@@ -1885,26 +2173,26 @@ button:disabled {
 .progress-slider::-webkit-slider-thumb {
   width: 13px;
   height: 13px;
-  border: 2px solid #f8eaff;
+  border: 2px solid #eff6ff;
   border-radius: 50%;
   appearance: none;
-  background: #c084fc;
-  box-shadow: 0 0 10px #c084fc66;
+  background: #60a5fa;
+  box-shadow: 0 0 10px #60a5fa66;
 }
 
 .progress-slider::-moz-range-thumb {
   width: 11px;
   height: 11px;
-  border: 2px solid #f8eaff;
+  border: 2px solid #eff6ff;
   border-radius: 50%;
-  background: #c084fc;
+  background: #60a5fa;
 }
 
 .time-labels {
   display: flex;
   justify-content: space-between;
   margin-top: 10px;
-  color: #9888a9;
+  color: #93a2b8;
   font-size: 10px;
   font-variant-numeric: tabular-nums;
 }
@@ -1925,7 +2213,7 @@ button:disabled {
   border: 1px solid #ffffff15;
   border-radius: 50%;
   background: #ffffff09;
-  color: #d7c4e6;
+  color: #d0dced;
   font-size: 24px;
 }
 
@@ -1936,10 +2224,10 @@ button:disabled {
   height: 67px;
   border: 0;
   border-radius: 50%;
-  background: #f4e6ff;
-  color: #281636;
+  background: #dbeafe;
+  color: #10213d;
   font-size: 25px;
-  box-shadow: 0 5px 30px #c084fc35;
+  box-shadow: 0 5px 30px #60a5fa35;
   transition: transform 0.2s;
 }
 
@@ -1953,7 +2241,7 @@ button:disabled {
   justify-content: center;
   gap: 8px;
   margin-top: 26px;
-  color: #a999b9;
+  color: #a3b1c7;
   font-size: 11px;
 }
 
@@ -1961,12 +2249,12 @@ button:disabled {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: #766582;
+  background: #52627a;
 }
 
 .status-dot.playing {
-  background: #d69bff;
-  box-shadow: 0 0 12px #d69bff;
+  background: #60a5fa;
+  box-shadow: 0 0 12px #60a5fa;
 }
 
 .full-player-footer {
@@ -1976,11 +2264,11 @@ button:disabled {
   gap: 12px;
   padding: 15px 0 0;
   border-top: 1px solid #ffffff12;
-  color: #9d8baa;
+  color: #93a2b8;
 }
 
 .full-player-footer > span:first-child {
-  color: #d6a5ff;
+  color: #93c5fd;
   font-size: 21px;
 }
 
@@ -1994,7 +2282,7 @@ button:disabled {
   padding: 5px 9px;
   border: 1px solid #ffffff15;
   border-radius: 6px;
-  color: #d7b5f0;
+  color: #bfdbfe;
   font-size: 10px;
 }
 
@@ -2056,7 +2344,7 @@ button:disabled {
     width: 100%;
     padding: 17px;
     border-right: 0;
-    border-bottom: 1px solid #292337;
+    border-bottom: 1px solid #202d42;
   }
 
   .brand {
@@ -2068,11 +2356,24 @@ button:disabled {
     display: none;
   }
 
+  .sidebar .genre-nav {
+    display: flex;
+    gap: 4px;
+    width: 100%;
+    margin-top: 8px;
+    overflow-x: auto;
+  }
+
   .sidebar .nav-item {
     display: inline-flex;
     width: auto;
     margin: 0 5px 0 0;
     padding: 9px 12px;
+  }
+
+  .sidebar .genre-nav .nav-item {
+    flex: 0 0 auto;
+    margin: 0;
   }
 
   .nav-count {
