@@ -14,8 +14,12 @@
 // Used by both AddSongView and EditSongView (reused component).
 // ============================================================
 
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useSongs } from '../composables/useSongs.js'
+
+// Separate localStorage key for UNSAVED form drafts (the song list
+// itself uses `spotibai_songs` in useSongs.js).
+const DRAFT_KEY = 'spotibai_song_draft'
 
 const props = defineProps({
   // Pass the song being edited (or null for "add" mode).
@@ -37,13 +41,82 @@ const emit = defineEmits(['submit-song', 'cancel-form'])
 const { genreOptions } = useSongs()
 
 // Reactive form state.
+//
+// DRAFT PERSISTENCE: before overwriting with defaults, check for a
+// saved draft in localStorage. The draft stores which song it
+// belongs to (`draftEditingId`), so an EDIT draft is only restored
+// when the form is opened for the SAME song. Add-mode drafts are
+// stored with editingId = null.
+function loadDraft() {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY)
+    if (raw === null) return null
+
+    const draft = JSON.parse(raw)
+
+    // Valid shape check: must be an object with a form object.
+    if (!draft || typeof draft !== 'object' || typeof draft.form !== 'object') {
+      return null
+    }
+
+    // An edit draft belongs to one song — only restore it when
+    // this form instance is editing that same song.
+    if (draft.editingId != null && draft.editingId !== props.editing?.id) {
+      return null
+    }
+
+    // Merge so missing fields fall back to sensible defaults.
+    return {
+      title: draft.form.title ?? props.editing?.title ?? '',
+      artist: draft.form.artist ?? props.editing?.artist ?? '',
+      album: draft.form.album ?? props.editing?.album ?? '',
+      genre: draft.form.genre ?? props.editing?.genre ?? 'BisRock',
+      year: draft.form.year ?? props.editing?.year ?? ''
+    }
+  } catch {
+    // Missing key or corrupted JSON -> just use the defaults.
+    return null
+  }
+}
+
+const savedDraft = loadDraft()
+
 const form = ref({
-  title: props.editing?.title || '',
-  artist: props.editing?.artist || '',
-  album: props.editing?.album || '',
-  genre: props.editing?.genre || 'BisRock',
-  year: props.editing?.year || ''
+  title: savedDraft?.title ?? props.editing?.title ?? '',
+  artist: savedDraft?.artist ?? props.editing?.artist ?? '',
+  album: savedDraft?.album ?? props.editing?.album ?? '',
+  genre: savedDraft?.genre ?? props.editing?.genre ?? 'BisRock',
+  year: savedDraft?.year ?? props.editing?.year ?? ''
 })
+
+// Save the draft to localStorage on EVERY keystroke (deep watch
+// over the reactive form ref). This is what makes Ctrl+R safe.
+watch(
+  form,
+  value => {
+    try {
+      localStorage.setItem(
+        DRAFT_KEY,
+        JSON.stringify({
+          editingId: props.editing?.id ?? null, // null = add-song draft
+          form: { ...value }
+        })
+      )
+    } catch {
+      /* storage full/unavailable — form still works, just not saved */
+    }
+  },
+  { deep: true }
+)
+
+// Clear the draft ONLY after a successful submit or explicit cancel.
+function clearDraft() {
+  try {
+    localStorage.removeItem(DRAFT_KEY)
+  } catch {
+    /* ignore */
+  }
+}
 
 // Validation errors, keyed by field — each renders under its input.
 const errors = ref({})
@@ -105,6 +178,9 @@ function handleSubmit() {
   submitted.value = true
 
   if (!validateAll()) return
+
+  // Success -> the draft has served its purpose.
+  clearDraft()
 
   // Emit the CLEANED form data up to the parent. The parent
   // decides whether to create or update a song.
@@ -180,7 +256,7 @@ function handleSubmit() {
     </p>
 
     <div class="modal-actions">
-      <button type="button" class="cancel-button" @click="emit('cancel-form')">
+      <button type="button" class="cancel-button" @click="clearDraft(); emit('cancel-form')">
         Cancel
       </button>
 
